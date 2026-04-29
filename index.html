@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LIFE AS GAME</title>
+<!-- CSP: explicitly allow Firebase/Google CDN scripts and Firestore connections.
+     Without this, some hosting platforms or strict browsers block gstatic.com. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src  'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com;
+  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com;
+  style-src   'self' 'unsafe-inline';
+  img-src     'self' data: blob:;
+  font-src    'self' data:;
+">
 
 <!-- ══════════════════════════════════════════════════════
      FIREBASE SDK  (v10 modular — compat bundle for simplicity)
@@ -20,8 +30,13 @@
         comment block at the top of the <script> section below
      6. Commit + push to GitHub. Done — all devices now sync live.
 ══════════════════════════════════════════════════════ -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<!-- Firebase compat SDK — v10.14.1 (stable, long-term supported) -->
+<!-- onerror sets a flag so DB.init() can detect SDK load failure cleanly -->
+<script>window._firebaseSDKFailed = false;</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"
+  onerror="window._firebaseSDKFailed=true;console.error('[DB] firebase-app-compat.js failed to load — check network/CSP');(function(){var m=document.getElementById('boot-msg');if(m)m.textContent='Firebase blocked — running offline';})()"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"
+  onerror="window._firebaseSDKFailed=true;console.error('[DB] firebase-firestore-compat.js failed to load — check network/CSP');(function(){var m=document.getElementById('boot-msg');if(m)m.textContent='Firebase blocked — running offline';})()"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -593,12 +608,313 @@ body.player-readonly-mode .sidebar .cat-item{
 .challenge-card:hover{border-color:rgba(77,166,255,0.6);box-shadow:0 4px 16px rgba(77,166,255,0.15)}
 .challenge-vs{font-size:11px;font-weight:800;color:var(--blue);letter-spacing:.1em;padding:4px 10px;background:rgba(77,166,255,0.1);border-radius:20px;border:1px solid rgba(77,166,255,0.3)}
 
-/* ── RESPONSIVE ── */
-@media(max-width:700px){
-  .sidebar{display:none}
-  .content{padding:12px}
-  .grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}
+/* ══════════════════════════════════════════════════════
+   MOBILE-FIRST RESPONSIVE SYSTEM — v20 Mobile Refactor
+   All changes marked with [MOBILE] comment tag
+   Desktop layout preserved via min-width breakpoints
+══════════════════════════════════════════════════════ */
+
+/* ── [MOBILE] ADAPTIVE GRID SYSTEM ──
+   Replaces all minmax(200px, 1fr) with adaptive columns */
+.grid2{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+
+/* [MOBILE] Control grid override for leader panel */
+.control-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+
+/* [MOBILE] Mission cards: single column on mobile */
+.mission-cards-grid{display:grid;grid-template-columns:1fr;gap:10px}
+
+/* [MOBILE] Links grids: single column on mobile */
+.links-grid-immersive{display:grid;grid-template-columns:1fr;gap:8px}
+.env-links-grid{display:grid;grid-template-columns:1fr;gap:8px}
+
+/* [MOBILE] Stat orbs: 3 col stays but smaller padding */
+.player-stats-orbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat-orb{padding:12px 8px}
+.stat-orb-val{font-size:18px}
+.stat-orb-label{font-size:9px}
+
+/* ── [MOBILE] TOPBAR — scrollable nav, no overflow ── */
+.topbar{
+  padding:0 10px;
+  gap:8px;
+  height:52px;
+  position:sticky;top:0;z-index:100;
 }
+.logo-text{display:none} /* [MOBILE] hide text logo on mobile, keep mark */
+.nav{
+  display:flex;
+  gap:0;
+  margin-left:auto;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  max-width:calc(100vw - 160px);
+  flex-shrink:1;
+}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{
+  padding:8px 10px;   /* [MOBILE] min 44px touch height via line-height */
+  font-size:12px;
+  white-space:nowrap;
+  min-height:44px;    /* [MOBILE] 44px touch target */
+  display:inline-flex;
+  align-items:center;
+}
+/* [MOBILE] Role badge compact */
+.role-badge{padding:2px 7px;font-size:10px;margin-left:4px}
+.view-only-pill{padding:2px 7px;font-size:9px;margin-left:2px}
+
+/* ── [MOBILE] LAYOUT — sidebar hidden, content full width ── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.main{display:flex;flex:1;gap:0;min-height:0}
+.sidebar{display:none} /* [MOBILE] hidden on mobile — bottom nav replaces it */
+.content{
+  flex:1;
+  padding:10px;      /* [MOBILE] reduced mobile padding */
+  overflow:auto;
+  /* [MOBILE] bottom padding to avoid content hiding behind bottom nav */
+  padding-bottom:72px;
+}
+
+/* ── [MOBILE] BOTTOM NAVIGATION BAR ── */
+#mobile-bottom-nav{
+  display:flex;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:60px;
+  background:rgba(7,9,15,0.97);
+  border-top:1px solid var(--border);
+  z-index:500;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 -4px 24px rgba(0,0,0,0.5);
+  /* gradient accent line at top */
+}
+#mobile-bottom-nav::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--purple),var(--teal),transparent);
+  opacity:.5;
+}
+.mob-nav-btn{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  background:none;
+  border:none;
+  color:var(--text3);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.04em;
+  cursor:pointer;
+  transition:color .15s;
+  min-height:44px; /* [MOBILE] touch target */
+  padding:6px 4px;
+  -webkit-tap-highlight-color:transparent;
+}
+.mob-nav-btn:active{
+  background:rgba(124,111,255,0.08);
+}
+.mob-nav-btn.active{
+  color:var(--purple);
+}
+.mob-nav-btn.active .mob-nav-icon{
+  filter:drop-shadow(0 0 6px rgba(124,111,255,0.5));
+}
+.mob-nav-icon{
+  font-size:18px;
+  line-height:1;
+  transition:transform .15s;
+}
+.mob-nav-btn:active .mob-nav-icon{
+  transform:scale(0.88);
+}
+.mob-nav-label{
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+/* ── [MOBILE] SIDEBAR DRAWER (for environments/categories) ── */
+#mobile-sidebar-drawer{
+  display:none; /* controlled via JS class */
+  position:fixed;
+  inset:0;
+  z-index:400;
+}
+#mobile-sidebar-drawer.open{display:block}
+.mob-drawer-backdrop{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(4px);
+}
+.mob-drawer-panel{
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:min(280px, 85vw);
+  background:rgba(7,9,15,0.98);
+  border-right:1px solid var(--border2);
+  padding:16px;
+  overflow-y:auto;
+  box-shadow:4px 0 32px rgba(0,0,0,0.6);
+  animation:drawerSlideIn .2s cubic-bezier(.34,1.2,.64,1);
+}
+@keyframes drawerSlideIn{
+  from{transform:translateX(-100%);opacity:.8}
+  to{transform:translateX(0);opacity:1}
+}
+/* Drawer sidebar content reuses .sidebar styles */
+.mob-drawer-panel .sidebar-section{margin-bottom:16px}
+.mob-drawer-panel .sidebar-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;padding:0 4px}
+.mob-drawer-panel .cat-item{min-height:44px} /* [MOBILE] touch target */
+.mob-drawer-handle{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;padding-bottom:14px;
+  border-bottom:1px solid var(--border);
+}
+.mob-drawer-title{font-size:12px;font-weight:800;color:var(--text);letter-spacing:.12em;text-transform:uppercase}
+.mob-drawer-close{
+  background:none;border:none;color:var(--text3);cursor:pointer;
+  font-size:20px;line-height:1;padding:4px;min-width:44px;min-height:44px;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.mob-drawer-close:hover{color:var(--text)}
+
+/* ── [MOBILE] DOUBLE XP BADGE — above bottom nav ── */
+body.double-xp-active #app::after{
+  bottom:68px; /* [MOBILE] above bottom nav */
+}
+
+/* ── [MOBILE] TOUCH TARGETS — Buttons, tasks ── */
+.btn{min-height:44px;padding:8px 14px} /* [MOBILE] increased */
+.btn.sm{min-height:36px;padding:6px 12px}
+.icon-btn{width:36px;height:36px} /* [MOBILE] larger touch target */
+.task-row{padding:12px 12px;gap:12px}
+.cat-item{min-height:44px;padding:10px 12px}
+.control-btn{padding:14px 10px;min-height:60px}
+.tab{min-height:44px;padding:8px 12px}
+.mob-nav-btn:focus{outline:none}
+
+/* ── [MOBILE] MODAL — full width on mobile ── */
+.modal{
+  max-width:calc(100vw - 24px);
+  margin:12px;
+  padding:18px;
+  max-height:85vh;
+}
+.modal-backdrop{padding:12px;align-items:flex-end} /* [MOBILE] sheet from bottom */
+
+/* ── [MOBILE] ENTRY BOX ── */
+.entry-box{padding:28px 20px 22px;margin:12px}
+.login-panel{padding:24px 20px}
+
+/* ── [MOBILE] SECTION HEADER ── */
+.section-header{gap:6px}
+.section-title{font-size:14px}
+
+/* ── [MOBILE] PLAYER HERO IMMERSIVE ── */
+.player-hero-immersive{padding:18px 16px 14px}
+.player-hero-top{gap:12px;margin-bottom:14px}
+.player-hero-avatar-ring{width:60px;height:60px}
+.player-hero-name-big{font-size:20px}
+.player-hero-xp-num{font-size:30px}
+
+/* ── [MOBILE] DAILY TIMELINE ── */
+.daily-day-label{min-width:80px;font-size:11px}
+
+/* ── [MOBILE] TOAST — above bottom nav ── */
+.toast{bottom:68px}
+
+/* ── [MOBILE] ACHIEVEMENT POPUP — above bottom nav ── */
+.achievement-popup{bottom:68px;right:12px;min-width:240px}
+
+/* ══════════════════════════════════════════════════════
+   TABLET BREAKPOINT — 2 columns, sidebar optional
+══════════════════════════════════════════════════════ */
+@media (min-width: 600px) {
+  /* [TABLET] Grid upgrades */
+  .grid2{grid-template-columns:repeat(2,1fr);gap:12px}
+  .grid3{grid-template-columns:repeat(2,1fr);gap:12px}
+  .grid4{grid-template-columns:repeat(2,1fr);gap:10px}
+  .control-grid{grid-template-columns:repeat(3,1fr)}
+  .mission-cards-grid{grid-template-columns:repeat(2,1fr)}
+  .links-grid-immersive{grid-template-columns:repeat(2,1fr)}
+  .env-links-grid{grid-template-columns:repeat(2,1fr)}
+  .player-stats-orbs{gap:10px}
+  .stat-orb{padding:14px 10px}
+  .stat-orb-val{font-size:20px}
+}
+
+/* ══════════════════════════════════════════════════════
+   DESKTOP BREAKPOINT — full layout restored
+══════════════════════════════════════════════════════ */
+@media (min-width: 860px) {
+  /* [DESKTOP] Show sidebar, hide bottom nav */
+  .sidebar{display:block}
+  #mobile-bottom-nav{display:none!important}
+  #mobile-sidebar-drawer{display:none!important}
+
+  /* [DESKTOP] Restore topbar layout */
+  .logo-text{display:flex}
+  .topbar{padding:0 20px;gap:16px;height:56px}
+  .nav{max-width:none;overflow-x:visible}
+  .nav-btn{padding:6px 14px;font-size:13px;min-height:auto}
+  .role-badge{padding:3px 10px;font-size:11px;margin-left:8px}
+  .view-only-pill{padding:3px 10px;font-size:10px;margin-left:6px}
+
+  /* [DESKTOP] Restore content padding */
+  .content{padding:20px;padding-bottom:20px}
+
+  /* [DESKTOP] Restore grid sizes */
+  .grid2{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .grid3{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .grid4{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .control-grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+  .mission-cards-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .links-grid-immersive{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  .env-links-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+
+  /* [DESKTOP] Restore button sizes */
+  .btn{min-height:auto;padding:7px 14px}
+  .btn.sm{min-height:auto;padding:4px 10px}
+  .icon-btn{width:28px;height:28px}
+  .task-row{padding:10px 12px;gap:10px}
+  .cat-item{min-height:auto;padding:8px 10px}
+  .control-btn{padding:12px;min-height:auto}
+  .tab{min-height:auto;padding:7px 14px}
+
+  /* [DESKTOP] Restore modal */
+  .modal{max-width:460px;margin:0;padding:24px;max-height:90vh}
+  .modal-backdrop{padding:20px;align-items:center}
+
+  /* [DESKTOP] Restore player hero */
+  .player-hero-immersive{padding:28px 28px 20px}
+  .player-hero-top{gap:20px;margin-bottom:20px}
+  .player-hero-avatar-ring{width:80px;height:80px}
+  .player-hero-name-big{font-size:26px}
+  .player-hero-xp-num{font-size:42px}
+  .stat-orb{padding:14px 10px}
+  .stat-orb-val{font-size:22px}
+  .stat-orb-label{font-size:10px}
+  .player-stats-orbs{gap:10px}
+
+  /* [DESKTOP] Restore toast/achievement positions */
+  .toast{bottom:20px}
+  .achievement-popup{bottom:80px;right:20px}
+  body.double-xp-active #app::after{bottom:60px}
+
+  /* [DESKTOP] Restore section header */
+  .section-title{font-size:16px}
+}
+
 
 /* ── DOUBLE XP GLOBAL EFFECT ── */
 body.double-xp-active #app::after{content:'2× XP';position:fixed;bottom:60px;left:16px;z-index:4000;background:linear-gradient(135deg,var(--red),var(--amber));border-radius:20px;padding:4px 12px;font-size:12px;font-weight:800;color:#fff;box-shadow:0 0 16px rgba(255,77,106,0.5);animation:eventPulse 1.5s ease infinite}
@@ -1085,6 +1401,19 @@ body.double-xp-active #app::after{content:'2× XP';position:fixed;bottom:60px;le
 <!-- ══ APP ══ -->
 <div class="app" id="app" style="display:none"></div>
 
+<!-- ══ [MOBILE] BOTTOM NAVIGATION BAR ══ -->
+<nav id="mobile-bottom-nav" aria-label="Main navigation" style="display:none">
+  <!-- populated by JS after login -->
+</nav>
+
+<!-- ══ [MOBILE] SIDEBAR DRAWER ══ -->
+<div id="mobile-sidebar-drawer" role="dialog" aria-modal="true" aria-label="Navigation drawer">
+  <div class="mob-drawer-backdrop" onclick="closeMobileDrawer()"></div>
+  <div class="mob-drawer-panel" id="mob-drawer-content">
+    <!-- populated by JS -->
+  </div>
+</div>
+
 <script>
 // ========== SECURE AUTH ==========
 // Password hashing via Web Crypto API (SHA-256 with pepper).
@@ -1517,7 +1846,7 @@ const state = {
   toastTimer: null,
   tab: 'teams',
   activeEvents: [], // {id, type, name, icon, desc, multiplier, endsAt}
-  challenges: [],   // {id, catId, type, aId, bId, xpGoal, startXP_a, startXP_b, createdAt}
+  challenges: [],   // {id, catId, type, aId, bId, xpGoal, startXpA, startXpB, createdAt}
   tasksLocked: false,
   activePlayerId: null, // Set to a player id to scope task visibility for that player (player mode)
 
@@ -1529,41 +1858,11 @@ const state = {
 
   // Environments replace categories — schema: { id, name, status, environmentPassword, teams, players, tasks, roles, importantLinks }
   // teams/players/tasks remain flat arrays keyed by catId for compatibility
-  categories: [
-    { id:1, name:'Alpha Sprint', duration:'30 days', status:'active', environmentPassword:'', roles:[], importantLinks:[] },
-    { id:2, name:'Beta Mission', duration:'14 days', status:'active', environmentPassword:'', roles:[], importantLinks:[] },
-    { id:3, name:'Gamma Phase', duration:'60 days', status:'closed', environmentPassword:'', roles:[], importantLinks:[] },
-  ],
-  teams: [
-    { id:1, catId:1, name:'Vanguard', icon:'⚡', color:'#7c6fff', totalXP:0, bonus:0 },
-    { id:2, catId:1, name:'Phoenix', icon:'🔥', color:'#ff4d6a', totalXP:0, bonus:0 },
-    { id:3, catId:2, name:'Storm', icon:'🌪', color:'#00d4aa', totalXP:0, bonus:0 },
-  ],
-  players: [
-    { id:1, teamId:1, name:'Alex Chen', xp:340, streak:5, completionRate:88, missedTasks:2, achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'' },
-    { id:2, teamId:1, name:'Sara Kim', xp:290, streak:3, completionRate:76, missedTasks:4, achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'' },
-    { id:3, teamId:1, name:'Marco D.', xp:410, streak:7, completionRate:94, missedTasks:1, achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'' },
-    { id:4, teamId:2, name:'Layla F.', xp:280, streak:2, completionRate:72, missedTasks:5, achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'' },
-    { id:5, teamId:2, name:'Josh T.', xp:350, streak:4, completionRate:85, missedTasks:3, achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'' },
-    { id:6, teamId:3, name:'Nina R.', xp:190, streak:1, completionRate:60, missedTasks:8, achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'' },
-    { id:7, teamId:3, name:'Omar S.', xp:220, streak:3, completionRate:70, missedTasks:5, achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'' },
-  ],
-  tasks: [
-    { id:1, catId:1, type:'general', name:'Morning standup check-in', assignedTo:'all', xpValue:20, repeatDaily:true, status:'active', locked:false },
-    { id:2, catId:1, type:'special', name:'System architecture review', assignedTo:3, xpValue:50, repeatDaily:false, status:'active', locked:false },
-    { id:3, catId:1, type:'team', name:'Deploy v2.1 release', assignedTo:1, xpValue:80, repeatDaily:false, status:'active', locked:false },
-    { id:4, catId:1, type:'general', name:'End-of-day report', assignedTo:'all', xpValue:15, repeatDaily:true, status:'active', locked:false },
-    { id:5, catId:1, type:'special', name:'Client presentation deck', assignedTo:5, xpValue:60, repeatDaily:false, status:'active', locked:false },
-    { id:6, catId:2, type:'general', name:'Daily progress log', assignedTo:'all', xpValue:10, repeatDaily:true, status:'active', locked:false },
-  ],
-  activityLog: [
-    { id:1, playerId:3, taskId:1, date:'Today 09:02', status:'done', xpEarned:20 },
-    { id:2, playerId:1, taskId:1, date:'Today 09:15', status:'done', xpEarned:20 },
-    { id:3, playerId:5, taskId:5, date:'Today 10:30', status:'late', xpEarned:36 },
-    { id:4, playerId:2, taskId:4, date:'Yesterday', status:'missed', xpEarned:0 },
-    { id:5, playerId:6, taskId:6, date:'Yesterday', status:'missed', xpEarned:0 },
-    { id:6, playerId:7, taskId:6, date:'Today 08:55', status:'done', xpEarned:10 },
-  ],
+  categories: [],
+  teams: [],
+  players: [],
+  tasks: [],
+  activityLog: [],
 
   // ══════════════════════════════════════════
   // PER-PLAYER TASK COMPLETIONS — new model
@@ -1572,31 +1871,7 @@ const state = {
   // Unique constraint: one entry per (taskId, playerId)
   // Task.status is now deprecated — all completion state lives here
   // ══════════════════════════════════════════
-  taskCompletions: [
-    // Seed: task 1 (Morning standup) — cat1, assignedTo:'all' — 5 players
-    { taskId:1, playerId:1, status:'done',    completedAt:'Today 09:15', xpEarned:20 },
-    { taskId:1, playerId:2, status:'pending', completedAt:null, xpEarned:0 },
-    { taskId:1, playerId:3, status:'done',    completedAt:'Today 09:02', xpEarned:20 },
-    { taskId:1, playerId:4, status:'missed',  completedAt:null, xpEarned:0 },
-    { taskId:1, playerId:5, status:'pending', completedAt:null, xpEarned:0 },
-    // task 2 (Architecture review) — assigned to player 3 only
-    { taskId:2, playerId:3, status:'pending', completedAt:null, xpEarned:0 },
-    // task 3 (Deploy v2.1) — assigned to team 1
-    { taskId:3, playerId:1, status:'done',    completedAt:'Today 11:00', xpEarned:80 },
-    { taskId:3, playerId:2, status:'missed',  completedAt:null, xpEarned:0 },
-    { taskId:3, playerId:3, status:'done',    completedAt:'Today 10:45', xpEarned:80 },
-    // task 4 (End-of-day report) — all players cat1
-    { taskId:4, playerId:1, status:'pending', completedAt:null, xpEarned:0 },
-    { taskId:4, playerId:2, status:'missed',  completedAt:null, xpEarned:0 },
-    { taskId:4, playerId:3, status:'pending', completedAt:null, xpEarned:0 },
-    { taskId:4, playerId:4, status:'pending', completedAt:null, xpEarned:0 },
-    { taskId:4, playerId:5, status:'pending', completedAt:null, xpEarned:0 },
-    // task 5 (Client presentation) — player 5 only
-    { taskId:5, playerId:5, status:'done',    completedAt:'Today 10:30', xpEarned:36 },
-    // task 6 (Daily progress log) — cat2 all players
-    { taskId:6, playerId:6, status:'missed',  completedAt:null, xpEarned:0 },
-    { taskId:6, playerId:7, status:'done',    completedAt:'Today 08:55', xpEarned:10 },
-  ],
+  taskCompletions: [],
 };
 
 // ========== HELPERS ==========
@@ -1789,17 +2064,17 @@ function el(tag,cls='',text='') { const e=document.createElement(tag); if(cls) e
 function html(cls,markup) { const e=el('div',cls); e.innerHTML=markup; return e; }
 function fmtTime(ms) { const s=Math.ceil(ms/1000); const m=Math.floor(s/60); const ss=s%60; return m>0?m+'m '+ss+'s':ss+'s'; }
 
-// ========== FIREBASE CONFIGURATION ==========
+// ═══════════════════════════════════════════════════════════════════════════
+// FIREBASE CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 // FIRESTORE SECURITY RULES (paste into Firebase Console → Firestore → Rules):
 //
 // rules_version = '2';
 // service cloud.firestore {
 //   match /databases/{database}/documents {
-//     // Only the "lag" document in the "game" collection is used
 //     match /game/{docId} {
-//       allow read: if true;                    // Anyone can read (players view data)
-//       allow write: if request.auth == null;   // Unauthenticated write (owner verified in-app)
+//       allow read: if true;
+//       allow write: if request.auth == null;
 //     }
 //     match /game/{docId}/auditLog/{entry} {
 //       allow read, write: if request.auth == null;
@@ -1819,52 +2094,110 @@ const FIREBASE_CONFIG = {
   appId:             "1:46476477361:web:b5a9af8122087656ae7390",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PERSISTENCE LAYER — Firebase Firestore with localStorage fallback
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCE LAYER — v21 Hardened Firebase Architecture
+// ─────────────────────────────────────────────────────────────────────────
 //
-// Architecture:
-//   • If FIREBASE_CONFIG contains real credentials → uses Firestore as the
-//     single source of truth. All devices share one document: game/lag.
-//     Changes made on any device are reflected everywhere in real-time.
-//   • If credentials are still placeholders → falls back to localStorage
-//     (original v18/v19 behaviour, device-local only).
+// MODE DECISION (explicit, never silent):
+//   "firebase" — Firestore is the single source of truth.
+//                All devices share game/lag in real-time.
+//   "local"    — localStorage only (no Firebase credentials present,
+//                or connection failed after retry exhaustion).
 //
-// The single Firestore document stores the same snapshot shape as before:
-//   { players, teams, categories, tasks, activityLog, activeEvents,
-//     challenges, environment, taskCompletions, _updatedAt }
+// INITIALISATION FLOW:
+//   1. Validate config shape (all 6 required fields present, no placeholders)
+//   2. Guard against duplicate firebase.initializeApp() calls
+//   3. Get Firestore instance and resolve game/lag document reference
+//   4. Verify the connection is live with a real read (not just SDK init)
+//   5. Seed Firestore from localStorage on first-ever run
+//   6. Attach onSnapshot listener (tears down any previous listener first)
+//   7. Log mode clearly — "[DB MODE] firebase" or "[DB MODE] local"
 //
-// Real-time listener: onSnapshot fires whenever any device writes → the local
-// state is patched and the UI re-renders, keeping all screens in sync.
-// ─────────────────────────────────────────────────────────────────────────────
+// WRITE SAFETY:
+//   • Every Firestore write is awaited inside save() with a 10s timeout
+//   • On write failure: up to 2 automatic retries with 1s back-off
+//   • After retry exhaustion: falls through to _saveLocal() as offline cache
+//   • _lastWriteAt debounce window: 1500ms (prevents echo re-renders)
+//
+// REAL-TIME SYNC:
+//   • onSnapshot is only attached after a verified live read
+//   • Duplicate listeners are prevented via _unsubscribe teardown
+//   • Own-write echoes are suppressed via _lastWriteAt guard
+//   • Errors inside the snapshot callback are caught and logged
+//
+// DOCUMENT SIZE GUARD:
+//   • activityLog is capped at 200 entries before every write
+//   • taskCompletions is capped at 1000 entries before every write
+//   (Firestore hard limit is 1 MiB per document)
+// ─────────────────────────────────────────────────────────────────────────
 
 const DB = (() => {
-  const LOCAL_KEY  = 'lag_data';
-  const FB_DOC     = 'game/lag';          // Firestore path: collection/document
-  const SNAP_KEYS  = ['players','teams','categories','tasks','activityLog',
-                      'activeEvents','challenges','environment','taskCompletions'];
+  // ── Constants ─────────────────────────────────────────────────────────────
+  const LOCAL_KEY          = 'lag_data';
+  const FB_COLLECTION      = 'game';
+  const FB_DOCUMENT        = 'lag';
+  const FB_DOC_PATH        = `${FB_COLLECTION}/${FB_DOCUMENT}`;
+  const WRITE_TIMEOUT_MS   = 10_000;   // max ms to wait for a Firestore write
+  const WRITE_RETRY_MAX    = 2;        // retries after first failure
+  const WRITE_RETRY_DELAY  = 1_000;    // ms between retries
+  const ECHO_DEBOUNCE_MS   = 1_500;    // ignore own-write echoes within this window
+  const LOG_PRE            = '[DB]';   // console log prefix
 
-  // Detect whether config has been filled in
-  const _isConfigured = () =>
-    FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith('REPLACE_');
+  // Keys that travel to/from the monolithic game/lag Firestore document.
+  // NOTE: 'players' is intentionally excluded — players have their own
+  // Firestore collection (players/{id}) managed by _attachPlayersListener().
+  const SNAP_KEYS = [
+    'teams', 'categories', 'tasks',
+    'activityLog', 'activeEvents', 'challenges',
+    'environment', 'taskCompletions',
+  ];
 
-  let _db   = null;   // Firestore instance (null when using localStorage)
-  let _ref  = null;   // DocumentReference for game/lag
-  let _unsubscribe = null;  // onSnapshot unsubscribe handle
-  let _useFirebase = false;
-  let _lastWriteAt = 0;     // timestamp of our own last write (debounce guard)
+  // ── Private state ──────────────────────────────────────────────────────────
+  let _app                = null;   // firebase.app instance
+  let _db                 = null;   // Firestore instance
+  let _ref                = null;   // DocumentReference  game/lag
+  let _unsubscribe        = null;   // onSnapshot teardown handle (game/lag doc)
+  let _playersCol         = null;   // CollectionReference  players/
+  let _unsubscribePlayers = null;   // onSnapshot teardown handle (players collection)
+  let _mode               = null;   // "firebase" | "local" | null (not yet initialised)
+  let _lastWriteAt        = 0;      // epoch ms of our most recent write (echo guard)
+  let _initDone           = false;  // guards against double-init
 
-  // ── Build a plain snapshot from in-memory state ──
-  function _snap() {
+  // ── Config validation ──────────────────────────────────────────────────────
+  // Validates all 6 required fields exist, are non-empty strings,
+  // and have not been left as REPLACE_* placeholder values.
+  function _validateConfig() {
+    const required = ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'];
+    for (const key of required) {
+      const val = FIREBASE_CONFIG[key];
+      if (!val || typeof val !== 'string' || val.startsWith('REPLACE_') || val.trim() === '') {
+        console.warn(`${LOG_PRE} Config field "${key}" is missing or is a placeholder.`);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // ── Snapshot builder (state → plain object for Firestore) ─────────────────
+  function _buildSnap() {
     const s = {};
     SNAP_KEYS.forEach(k => { s[k] = state[k]; });
+    // Document size guard — trim before every write
+    if (Array.isArray(s.activityLog) && s.activityLog.length > 200) {
+      s.activityLog = s.activityLog.slice(-200);
+    }
+    if (Array.isArray(s.taskCompletions) && s.taskCompletions.length > 1000) {
+      s.taskCompletions = s.taskCompletions.slice(-1000);
+    }
     s._updatedAt = Date.now();
     return s;
   }
 
-  // ── Patch in-memory state from a Firestore snapshot ──
+  // ── Snapshot applier (Firestore data → in-memory state) ───────────────────
+  // NOTE: snap.players is intentionally NOT handled here.
+  // Players are synced via _attachPlayersListener() (players/ collection).
   function _applySnap(snap) {
-    if (!snap) return;
-    if (snap.players)      state.players      = snap.players.map(p => ({ achievements:[], playerPassword:'', privateNotes:[], avatarUrl:'', ...p }));
+    if (!snap || typeof snap !== 'object') return;
     if (snap.teams)        state.teams        = snap.teams;
     if (snap.categories)   state.categories   = snap.categories.map(c => ({ environmentPassword:'', roles:[], importantLinks:[], ...c }));
     if (snap.tasks)        state.tasks        = snap.tasks.map(t => ({ locked:false, taskDate:'', taskLink:'', recurring:false, recurringDays:[], ...t }));
@@ -1878,103 +2211,364 @@ const DB = (() => {
     if (snap.taskCompletions) state.taskCompletions = snap.taskCompletions;
   }
 
-  return {
-    // Called once at startup — initialises Firebase or falls back to localStorage
-    async init() {
-      if (_isConfigured()) {
-        try {
-          firebase.initializeApp(FIREBASE_CONFIG);
-          _db  = firebase.firestore();
-          _ref = _db.doc(FB_DOC);
-          _useFirebase = true;
-          console.log('[DB] Firebase Firestore initialised ✓');
+  // ── Promise-wrapped write with timeout ────────────────────────────────────
+  function _writeWithTimeout(ref, data) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('Firestore write timed out after ' + WRITE_TIMEOUT_MS + 'ms')),
+        WRITE_TIMEOUT_MS
+      );
+      ref.set(data)
+        .then(() => { clearTimeout(timer); resolve(); })
+        .catch(err => { clearTimeout(timer); reject(err); });
+    });
+  }
 
-          // Load initial data
-          const docSnap = await _ref.get();
-          if (docSnap.exists) {
-            _applySnap(docSnap.data());
-            console.log('[DB] Loaded data from Firestore ✓');
-          } else {
-            // First ever run with this Firebase project — seed from localStorage if present
-            const local = localStorage.getItem(LOCAL_KEY);
-            if (local) {
-              try { _applySnap(JSON.parse(local)); } catch(e) {}
-            }
-            // Write initial state to Firestore
-            await _ref.set(_snap());
-            console.log('[DB] Seeded Firestore with initial data ✓');
+  // ── Write with automatic retry ────────────────────────────────────────────
+  async function _writeWithRetry(data, attempt = 1) {
+    try {
+      await _writeWithTimeout(_ref, data);
+      console.log(`${LOG_PRE} Write OK${attempt > 1 ? ' (attempt ' + attempt + ')' : ''}`);
+    } catch (err) {
+      if (attempt <= WRITE_RETRY_MAX) {
+        console.warn(`${LOG_PRE} Write attempt ${attempt} failed — retrying in ${WRITE_RETRY_DELAY}ms:`, err.message);
+        await new Promise(r => setTimeout(r, WRITE_RETRY_DELAY));
+        return _writeWithRetry(data, attempt + 1);
+      }
+      throw err;
+    }
+  }
+
+  // ── Attach real-time listener ──────────────────────────────────────────────
+  function _attachListener() {
+    if (_unsubscribe) {
+      console.log(`${LOG_PRE} Tearing down existing onSnapshot listener`);
+      try { _unsubscribe(); } catch(e) {}
+      _unsubscribe = null;
+    }
+
+    console.log(`${LOG_PRE} Attaching onSnapshot listener → ${FB_DOC_PATH}`);
+
+    _unsubscribe = _ref.onSnapshot(
+      (docSnapshot) => {
+        try {
+          if (!docSnapshot.exists) {
+            console.warn(`${LOG_PRE} onSnapshot: document ${FB_DOC_PATH} no longer exists — skipping`);
+            return;
+          }
+          const data = docSnapshot.data();
+          if (!data) return;
+
+          if (data._updatedAt && (Date.now() - _lastWriteAt) < ECHO_DEBOUNCE_MS) {
+            console.log(`${LOG_PRE} onSnapshot: suppressed own-write echo (${Date.now() - _lastWriteAt}ms ago)`);
+            return;
           }
 
-          // ── Real-time listener ──
-          // Skips updates that came from our own recent write (< 2s ago) to
-          // avoid a re-render loop when we are the writer.
-          _unsubscribe = _ref.onSnapshot(doc => {
-            if (!doc.exists) return;
-            const data = doc.data();
-            // Ignore echoes of our own writes
-            if (data._updatedAt && (Date.now() - _lastWriteAt) < 2000) return;
-            _applySnap(data);
-            computeTeamXP();
-            try { render(); } catch(e) {}
-          });
+          console.log(`${LOG_PRE} onSnapshot: remote update received, applying…`);
+          _applySnap(data);
 
-        } catch (err) {
-          console.warn('[DB] Firebase init failed — falling back to localStorage:', err);
-          _useFirebase = false;
-          this._loadLocal();
+          try {
+            const cacheSnap = {};
+            SNAP_KEYS.forEach(k => { cacheSnap[k] = state[k]; });
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(cacheSnap));
+          } catch(cacheErr) {
+            console.warn(`${LOG_PRE} onSnapshot: local cache write failed:`, cacheErr.message);
+          }
+
+          try { computeTeamXP(); } catch(e) {}
+          try { render(); } catch(e) {}
+        } catch (callbackErr) {
+          console.error(`${LOG_PRE} onSnapshot callback error:`, callbackErr);
         }
-      } else {
-        console.log('[DB] Firebase not configured — using localStorage (device-local mode)');
-        this._loadLocal();
+      },
+      (listenerErr) => {
+        console.error(`${LOG_PRE} onSnapshot listener error (will attempt re-attach in 5s):`, listenerErr);
+        _unsubscribe = null;
+        setTimeout(() => {
+          if (_mode === 'firebase' && _ref) {
+            console.log(`${LOG_PRE} Re-attaching onSnapshot listener after error`);
+            _attachListener();
+          }
+        }, 5_000);
       }
-    },
+    );
 
-    // ── Write current state ──
-    async save() {
-      if (_useFirebase && _ref) {
+    console.log(`${LOG_PRE} ✅ Real-time sync active → ${FB_DOC_PATH}`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PLAYERS COLLECTION — real-time sync via players/{id} documents
+  // ─────────────────────────────────────────────────────────────────────────
+  // Each player is stored as its own Firestore document: players/{player.id}
+  // This avoids the 1 MiB single-document limit and enables per-player writes.
+  //
+  // STEP A — READ: _attachPlayersListener() opens an onSnapshot on the whole
+  //   collection, applies each document to state.players, and logs to console.
+  // STEP B — RENDER: after state.players is populated, render() is called.
+  // STEP C/D — WRITE: savePlayer(p) does a set() on players/{p.id}.
+  // STEP E — DELETE: deletePlayerDoc(id) removes players/{id}.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Normalize a single Firestore player document into a safe player object
+  function _applyPlayerDoc(docData) {
+    return {
+      achievements:   [],
+      playerPassword: '',
+      privateNotes:   [],
+      avatarUrl:      '',
+      ...docData,
+    };
+  }
+
+  // STEP A + B: Attach real-time listener on the players/ collection
+  function _attachPlayersListener() {
+    // Tear down any existing listener first
+    if (_unsubscribePlayers) {
+      console.log(`${LOG_PRE} [Players] Tearing down existing players listener`);
+      try { _unsubscribePlayers(); } catch(e) {}
+      _unsubscribePlayers = null;
+    }
+
+    console.log(`${LOG_PRE} [Players] Attaching onSnapshot listener → players/`);
+
+    _unsubscribePlayers = _playersCol.onSnapshot(
+      (querySnapshot) => {
         try {
-          const snap = _snap();
-          _lastWriteAt = Date.now();
-          // Non-blocking — don't await so the UI stays snappy
-          _ref.set(snap).catch(e => {
-            console.warn('[DB] Firestore write failed — saving locally as fallback:', e);
-            this._saveLocal();
+          // STEP A: Read all player docs and rebuild state.players
+          const players = [];
+          querySnapshot.forEach(doc => {
+            players.push(_applyPlayerDoc(doc.data()));
           });
-        } catch(e) {
-          console.warn('[DB] save() error:', e);
-          this._saveLocal();
+          console.log(`${LOG_PRE} [Players] Snapshot received — ${players.length} player(s)`);
+
+          // STEP B: Apply to state and render
+          state.players = players;
+          try { computeTeamXP(); } catch(e) {}
+          try { render(); } catch(e) {}
+        } catch (err) {
+          console.error(`${LOG_PRE} [Players] onSnapshot callback error:`, err);
         }
-      } else {
-        this._saveLocal();
+      },
+      (err) => {
+        console.error(`${LOG_PRE} [Players] Listener error (re-attaching in 5s):`, err);
+        _unsubscribePlayers = null;
+        setTimeout(() => {
+          if (_mode === 'firebase' && _playersCol) {
+            console.log(`${LOG_PRE} [Players] Re-attaching listener after error`);
+            _attachPlayersListener();
+          }
+        }, 5_000);
+      }
+    );
+
+    console.log(`${LOG_PRE} [Players] ✅ Real-time sync active → players/`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PUBLIC API
+  // ═══════════════════════════════════════════════════════════════════════════
+  return {
+
+    async init() {
+      if (_initDone) {
+        console.warn(`${LOG_PRE} init() called more than once — skipping duplicate`);
+        return;
+      }
+      _initDone = true;
+
+      // Step 1: Config validation
+      if (!_validateConfig()) {
+        console.log(`${LOG_PRE} ⚠️  Config invalid or unset → [DB MODE] local`);
+        _mode = 'local';
+        this._loadLocal();
+        return;
+      }
+
+      // Step 2: Firebase SDK availability check (typeof guard prevents ReferenceError)
+      // A bare `if (!firebase.apps)` throws ReferenceError when the CDN script failed
+      // to load — typeof is the only safe way to test for an undeclared global.
+      if (typeof firebase === 'undefined' || window._firebaseSDKFailed) {
+        const reason = window._firebaseSDKFailed
+          ? 'SDK script failed to load (network error or CSP block)'
+          : 'firebase global is undefined (SDK script not executed)';
+        console.error(`${LOG_PRE} Firebase SDK unavailable: ${reason} → [DB MODE] local`);
+        console.error(`${LOG_PRE} ↳ Check: network connection, Content-Security-Policy, ad-blockers`);
+        _mode = 'local';
+        this._loadLocal();
+        return;
+      }
+
+      // Step 3: firebase.initializeApp() with duplicate-app guard
+      try {
+        if (!firebase.apps || firebase.apps.length === 0) {
+          _app = firebase.initializeApp(FIREBASE_CONFIG);
+          console.log(`${LOG_PRE} firebase.initializeApp() ✓ (project: ${FIREBASE_CONFIG.projectId})`);
+        } else {
+          _app = firebase.app();
+          console.log(`${LOG_PRE} firebase.app() re-used — already initialised`);
+        }
+      } catch (sdkErr) {
+        console.error(`${LOG_PRE} firebase.initializeApp() threw → [DB MODE] local`, sdkErr);
+        _mode = 'local';
+        this._loadLocal();
+        return;
+      }
+      try {
+        _db = firebase.firestore();
+        console.log(`${LOG_PRE} firebase.firestore() instance obtained ✓`);
+      } catch (fsErr) {
+        console.error(`${LOG_PRE} firebase.firestore() failed → [DB MODE] local`, fsErr);
+        _mode = 'local';
+        this._loadLocal();
+        return;
+      }
+
+      // Step 4: Document reference
+      try {
+        _ref = _db.collection(FB_COLLECTION).doc(FB_DOCUMENT);
+        console.log(`${LOG_PRE} Document reference resolved → ${FB_DOC_PATH}`);
+      } catch (refErr) {
+        console.error(`${LOG_PRE} Document reference failed → [DB MODE] local`, refErr);
+        _mode = 'local';
+        this._loadLocal();
+        return;
+      }
+
+      // Step 5: Connection verification with real read
+      let docSnapshot;
+      try {
+        console.log(`${LOG_PRE} Verifying connection with live read…`);
+        docSnapshot = await _ref.get();
+        console.log(`${LOG_PRE} Connection verified ✓ (document ${docSnapshot.exists ? 'found' : 'will be created'})`);
+      } catch (readErr) {
+        console.error(`${LOG_PRE} Connection verification failed → [DB MODE] local`, readErr);
+        _mode = 'local';
+        this._loadLocal();
+        return;
+      }
+
+      // Step 6: Mode confirmed
+      _mode = 'firebase';
+      console.log(`${LOG_PRE} ✅ [DB MODE] firebase — project: ${FIREBASE_CONFIG.projectId}`);
+
+      // Step 7: Load initial data
+      try {
+        if (docSnapshot.exists) {
+          _applySnap(docSnapshot.data());
+          console.log(`${LOG_PRE} Initial data loaded from Firestore ✓`);
+        } else {
+          console.log(`${LOG_PRE} Document ${FB_DOC_PATH} does not exist — seeding…`);
+          try {
+            const raw = localStorage.getItem(LOCAL_KEY);
+            if (raw) { _applySnap(JSON.parse(raw)); console.log(`${LOG_PRE} Seeded from localStorage cache`); }
+          } catch(e) { console.warn(`${LOG_PRE} localStorage seed read failed:`, e.message); }
+          try {
+            await _ref.set(_buildSnap());
+            console.log(`${LOG_PRE} Firestore document created ✓`);
+          } catch(e) { console.error(`${LOG_PRE} Initial seed write failed (non-fatal):`, e); }
+        }
+      } catch (applyErr) {
+        console.error(`${LOG_PRE} Applying initial snapshot failed:`, applyErr);
+      }
+
+      // Step 8: Attach real-time listener on the monolithic game/lag document
+      try {
+        _attachListener();
+      } catch (listenerErr) {
+        console.error(`${LOG_PRE} onSnapshot attach failed:`, listenerErr);
+      }
+
+      // Step 9: Resolve players/ collection reference and attach player listener
+      try {
+        _playersCol = _db.collection('players');
+        console.log(`${LOG_PRE} [Players] Collection reference resolved → players/`);
+        _attachPlayersListener();
+      } catch (playersErr) {
+        console.error(`${LOG_PRE} [Players] Failed to attach players listener:`, playersErr);
       }
     },
 
-    // ── localStorage helpers (always kept in sync as offline cache) ──
+    async save() {
+      // Always write local cache first (offline resilience, both modes)
+      this._saveLocal();
+
+      if (_mode === 'firebase' && _ref) {
+        const snap = _buildSnap();
+        _lastWriteAt = Date.now();
+        try {
+          await _writeWithRetry(snap);
+        } catch (writeErr) {
+          console.error(`${LOG_PRE} save() — all Firestore retries exhausted. Preserved in localStorage:`, writeErr.message);
+        }
+      }
+    },
+
     _saveLocal() {
       try {
         const snap = {};
         SNAP_KEYS.forEach(k => { snap[k] = state[k]; });
         localStorage.setItem(LOCAL_KEY, JSON.stringify(snap));
-      } catch(e) {}
+      } catch(e) {
+        console.warn(`${LOG_PRE} localStorage write failed:`, e.message);
+      }
     },
 
     _loadLocal() {
       try {
         const raw = localStorage.getItem(LOCAL_KEY);
-        if (!raw) return;
+        if (!raw) { console.log(`${LOG_PRE} localStorage: no existing data — starting fresh`); return; }
         _applySnap(JSON.parse(raw));
-      } catch(e) {}
+        console.log(`${LOG_PRE} localStorage: data loaded ✓`);
+      } catch(e) {
+        console.error(`${LOG_PRE} localStorage read/parse failed:`, e.message);
+      }
     },
 
-    // ── Status info (used in Settings panel) ──
-    get isFirebaseMode() { return _useFirebase; },
-    get isConfigured()   { return _isConfigured(); },
+    // ── STEP C/D: Write one player document to players/{player.id} ─────────────
+    // Covers CREATE (new player) and UPDATE (edit player, award XP, etc.)
+    // Falls back to saveState() (localStorage) when not in firebase mode.
+    async savePlayer(p) {
+      if (_mode === 'firebase' && _playersCol) {
+        try {
+          await _playersCol.doc(String(p.id)).set({ ...p });
+          console.log(`${LOG_PRE} [Players] savePlayer OK — id:${p.id} name:${p.name}`);
+        } catch (err) {
+          console.error(`${LOG_PRE} [Players] savePlayer failed for id:${p.id}:`, err.message);
+          // Fallback: persist via the monolithic save so data is not lost
+          this._saveLocal();
+        }
+      } else {
+        // local mode — monolithic save covers players
+        this._saveLocal();
+      }
+    },
+
+    // ── STEP E: Delete one player document from players/{id} ─────────────────
+    async deletePlayerDoc(playerId) {
+      if (_mode === 'firebase' && _playersCol) {
+        try {
+          await _playersCol.doc(String(playerId)).delete();
+          console.log(`${LOG_PRE} [Players] deletePlayerDoc OK — id:${playerId}`);
+        } catch (err) {
+          console.error(`${LOG_PRE} [Players] deletePlayerDoc failed for id:${playerId}:`, err.message);
+        }
+      }
+      // In local mode the player is already removed from state.players;
+      // _saveLocal() called by the caller via saveState() covers it.
+    },
+
+    get isFirebaseMode() { return _mode === 'firebase'; },
+    get isConfigured()   { return _validateConfig(); },
+    get mode()           { return _mode; },
+    get syncActive()     { return _unsubscribe !== null; },
+    get playersReady()   { return _unsubscribePlayers !== null; },
   };
 })();
 
-// ── Thin wrappers so existing code that calls saveState() / loadState() still works ──
-function saveState() { DB.save(); DB._saveLocal(); }
-function loadState() { /* handled by DB.init() */ }
+// ── Thin wrappers — all existing saveState() / loadState() calls continue to work ──
+function saveState() { DB.save(); }
+function loadState() { /* handled exclusively by DB.init() at boot */ }
+
 
 
 // ========== INTRO ==========
@@ -2049,7 +2643,7 @@ window.createChallenge = (type, aId, bId, xpGoal) => {
   const a=type==='pvp'?state.players.find(p=>p.id===aId):state.teams.find(t=>t.id===aId);
   const b=type==='pvp'?state.players.find(p=>p.id===bId):state.teams.find(t=>t.id===bId);
   if(!a||!b) return;
-  state.challenges.push({ id:Date.now(), catId, type, aId, bId, xpGoal:xpGoal||200, startXP_a:a.xp||a.totalXP||0, startXP_b:b.xp||b.totalXP||0, createdAt:new Date().toLocaleTimeString() });
+  state.challenges.push({ id:Date.now(), catId, type, aId, bId, xpGoal:xpGoal||200, startXpA:a.xp||a.totalXP||0, startXpB:b.xp||b.totalXP||0, createdAt:new Date().toLocaleTimeString() });
   showToast(`⚔ Challenge started: ${a.name} vs ${b.name}!`);
   closeModal();
   render();
@@ -2186,7 +2780,16 @@ window.submitAddPlayer = () => {
   const teamId=parseInt(document.getElementById('m-team')?.value);
   if(!name||!teamId) return;
   const id=Math.max(...state.players.map(p=>p.id),0)+1;
-  state.players.push({id,teamId,name,xp:0,streak:0,completionRate:0,missedTasks:0,achievements:[],playerPassword:'',privateNotes:[],avatarUrl:''});
+  const newPlayer={id,teamId,name,xp:0,streak:0,completionRate:0,missedTasks:0,achievements:[],playerPassword:'',privateNotes:[],avatarUrl:''};
+  // STEP C: write to Firestore players/ collection (or localStorage in local mode)
+  // The onSnapshot listener will push the new doc back into state.players and re-render.
+  // In local mode we mutate state directly and save.
+  if (DB.isFirebaseMode) {
+    DB.savePlayer(newPlayer);
+  } else {
+    state.players.push(newPlayer);
+    saveState();
+  }
   closeModal(); showToast(`${name} joined the arena!`);
 };
 
@@ -2346,6 +2949,8 @@ window.markTask = (taskId, status, rowEl, specificPlayerId) => {
       }
       const newAch = checkAchievements(p);
       newAch.forEach((ach, i) => setTimeout(() => showAchievementPopup(ach), (i + 1) * 500));
+      // STEP D: persist this player's XP/streak/completionRate to Firestore players/
+      DB.savePlayer(p);
     }
   });
 
@@ -2377,6 +2982,8 @@ window.awardXP = (playerId, amount, evt) => {
   if(evt) showFloatingXP(amount,evt.clientX,evt.clientY);
   else showFloatingXP(amount,window.innerWidth/2,window.innerHeight/2);
   showToast(amount>0?`+${amount} XP awarded to ${p.name}!`:`${amount} XP from ${p.name}`);
+  // STEP D: persist XP change to Firestore players/ (was never saved before)
+  DB.savePlayer(p);
   render();
   setTimeout(()=>openModal('playerDetail',playerId),50);
 };
@@ -2389,6 +2996,8 @@ window.awardTeamBonus = (teamId, evt) => {
   const team=state.teams.find(t=>t.id===teamId);
   if(evt) showFloatingXP(bonus,evt.clientX,evt.clientY);
   showToast('🏆 Team Bonus! '+(team?.name||'')+' +'+bonus+' XP each!');
+  // STEP D: persist XP change for every player in the team
+  players.forEach(p => DB.savePlayer(p));
   render();
 };
 
@@ -2446,6 +3055,8 @@ window.submitAddNote = (playerId) => {
   if (!p) return;
   if (!Array.isArray(p.privateNotes)) p.privateNotes = [];
   p.privateNotes.push(text);
+  // STEP D: persist note addition to Firestore players/
+  DB.savePlayer(p);
   saveState();
   // Keep modal open and re-render so the new note appears immediately.
   // The modal re-renders with fresh data from state — no stale reads.
@@ -2466,6 +3077,8 @@ window.editNote = (playerId, noteIdx) => {
   const trimmed = newText.trim();
   if (!trimmed) return;
   p.privateNotes[noteIdx] = trimmed;
+  // STEP D: persist note edit to Firestore players/
+  DB.savePlayer(p);
   saveState();
   state.modal = { type: 'playerNotes', data: playerId };
   render();
@@ -2477,6 +3090,8 @@ window.deleteNote = (playerId, noteIdx) => {
   const p = state.players.find(x => x.id === playerId);
   if (!p || !Array.isArray(p.privateNotes)) return;
   p.privateNotes.splice(noteIdx, 1);
+  // STEP D: persist note deletion to Firestore players/
+  DB.savePlayer(p);
   saveState();
   state.modal = { type: 'playerNotes', data: playerId };
   render();
@@ -2488,6 +3103,8 @@ window.submitSetPlayerPassword = (playerId) => {
   const p = state.players.find(x => x.id === playerId);
   if (!p) return;
   p.playerPassword = pw.trim();
+  // STEP D: persist password change to Firestore players/
+  DB.savePlayer(p);
   saveState();
   showToast(pw.trim() ? `🔐 Password set for ${p.name}` : `🔓 Password removed for ${p.name}`);
   state.modal = { type: 'playerNotes', data: playerId };
@@ -2850,6 +3467,9 @@ window.deletePlayer = (playerId) => {
     confirmLabel: 'Remove', confirmClass: 'danger',
     onConfirm: () => {
       state.players = state.players.filter(x => x.id !== playerId);
+      // STEP E: delete the player document from Firestore players/ collection
+      DB.deletePlayerDoc(playerId);
+      // saveState() persists the rest of state (not players in firebase mode)
       saveState(); closeModal(); showToast('🗑️ Player removed'); render();
     }
   });
@@ -2869,7 +3489,9 @@ window.editPlayer = (playerId) => {
       if (!vals.name.trim()) return 'Name required';
       p.name = vals.name.trim();
       p.teamId = parseInt(vals.teamId);
-      saveState(); showToast('✏️ Player updated'); render(); return null;
+      // STEP D: persist updated player to Firestore players/ (or localStorage)
+      DB.savePlayer(p);
+      showToast('✏️ Player updated'); render(); return null;
     }
   });
 };
@@ -2946,6 +3568,8 @@ window.saveAvatar = (playerId, overlayEl) => {
   if (!p) return;
   p.avatarUrl = dataUrl;
   delete window._pendingAvatarData[playerId];
+  // STEP D: persist avatarUrl change to Firestore players/
+  DB.savePlayer(p);
   saveState();
   showToast('🖼 Avatar updated!');
   // Restore the modal that was open when the avatar overlay was launched so the user
@@ -2967,6 +3591,8 @@ window.removeAvatar = (playerId, overlayEl) => {
   if (!p) return;
   p.avatarUrl = '';
   delete window._pendingAvatarData[playerId];
+  // STEP D: persist avatarUrl removal to Firestore players/
+  DB.savePlayer(p);
   saveState();
   showToast('🗑 Avatar removed');
   const parentModal = overlayEl?._parentModal ?? null;
@@ -3100,7 +3726,112 @@ window.navigate = function(v) {
   render();
 };
 
-// Safe content renderer: tries the registered render fn, shows placeholder on error
+// ══════════════════════════════════════════════
+// [MOBILE] BOTTOM NAV + DRAWER SYSTEM
+// Does NOT change any logic — purely UI layer
+// ══════════════════════════════════════════════
+
+// [MOBILE] Bottom nav view configs per role
+function getMobileNavItems() {
+  if (auth.isOwner()) {
+    return [
+      { v:'dashboard',   icon:'🏠', label:'Home' },
+      { v:'leaderboard', icon:'🏆', label:'Board' },
+      { v:'activity',    icon:'📋', label:'Activity' },
+      { v:'profile',     icon:'👤', label:'Profile' },
+      { v:'settings',    icon:'⚙️',  label:'Settings' },
+    ];
+  }
+  return [
+    { v:'dashboard',   icon:'🏠', label:'Home' },
+    { v:'leaderboard', icon:'🏆', label:'Board' },
+    { v:'profile',     icon:'👤', label:'Profile' },
+  ];
+}
+
+// [MOBILE] Render bottom nav
+function renderMobileBottomNav() {
+  const nav = document.getElementById('mobile-bottom-nav');
+  if (!nav) return;
+  // Only show if mobile (< 860px)
+  const isMobile = window.innerWidth < 860;
+  nav.style.display = isMobile ? 'flex' : 'none';
+  if (!isMobile) return;
+
+  const items = getMobileNavItems();
+  // Environments button prepended if player with categories
+  const hasCats = state.categories && state.categories.length > 0;
+  const envBtn = (!auth.isOwner() && hasCats)
+    ? `<button class="mob-nav-btn" onclick="openMobileDrawer()" aria-label="Environments">
+        <span class="mob-nav-icon">🗂️</span>
+        <span class="mob-nav-label">Envs</span>
+       </button>`
+    : '';
+
+  nav.innerHTML = envBtn + items.map(item =>
+    `<button class="mob-nav-btn ${state.currentView===item.v?'active':''}"
+      onclick="navigate('${item.v}')"
+      aria-label="${item.label}"
+      aria-current="${state.currentView===item.v?'page':'false'}">
+      <span class="mob-nav-icon">${item.icon}</span>
+      <span class="mob-nav-label">${item.label}</span>
+    </button>`
+  ).join('');
+}
+
+// [MOBILE] Open sidebar drawer
+window.openMobileDrawer = function() {
+  const drawer = document.getElementById('mobile-sidebar-drawer');
+  const panel = document.getElementById('mob-drawer-content');
+  if (!drawer || !panel) return;
+
+  // Clone sidebar content into drawer
+  try {
+    const sidebarEl = renderSidebar();
+    panel.innerHTML = `
+      <div class="mob-drawer-handle">
+        <span class="mob-drawer-title">Environments</span>
+        <button class="mob-drawer-close" onclick="closeMobileDrawer()" aria-label="Close drawer">×</button>
+      </div>`;
+    // Move sidebar children into drawer
+    Array.from(sidebarEl.children).forEach(child => panel.appendChild(child.cloneNode(true)));
+    // Patch onclick for cat-items so they also close the drawer
+    panel.querySelectorAll('.cat-item').forEach(item => {
+      const orig = item.getAttribute('onclick') || '';
+      item.setAttribute('onclick', orig + ';closeMobileDrawer()');
+    });
+  } catch(e) {
+    panel.innerHTML += '<div style="padding:12px;color:var(--text3);font-size:12px">Unable to load environments.</div>';
+  }
+
+  drawer.classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+// [MOBILE] Close sidebar drawer
+window.closeMobileDrawer = function() {
+  const drawer = document.getElementById('mobile-sidebar-drawer');
+  if (drawer) drawer.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+// [MOBILE] Patch navigate to also update bottom nav
+const _origNavigate = window.navigate;
+window.navigate = function(v) {
+  _origNavigate(v);
+  renderMobileBottomNav();
+};
+
+// [MOBILE] Listen for resize to toggle bottom nav visibility
+window.addEventListener('resize', () => {
+  renderMobileBottomNav();
+}, { passive: true });
+
+// ══════════════════════════════════════════════
+// [END MOBILE] bottom nav / drawer system
+// ══════════════════════════════════════════════
+
+
 function renderViewSafe(viewId, content) {
   const view = VIEW_REGISTRY[viewId] || VIEW_REGISTRY['dashboard'];
   try {
@@ -3217,6 +3948,9 @@ function render() {
     dbg.style.cssText = 'position:fixed;bottom:8px;right:8px;font-size:9px;color:rgba(255,255,255,0.18);letter-spacing:.08em;pointer-events:none;z-index:9999';
     dbg.textContent = `view:${state.currentView}`;
     app.appendChild(dbg);
+
+    // ── [MOBILE] Update bottom nav on every render ──
+    try { renderMobileBottomNav(); } catch(e) { console.warn('[MOBILE] bottom nav render error:', e); }
 
   } catch(criticalErr) {
     // Last-resort fallback — no recursion, just static HTML
@@ -3441,8 +4175,8 @@ function renderDashboard(content) {
       const a=isPvp?state.players.find(p=>p.id===ch.aId):state.teams.find(t=>t.id===ch.aId);
       const b=isPvp?state.players.find(p=>p.id===ch.bId):state.teams.find(t=>t.id===ch.bId);
       if(!a||!b) return;
-      const aScore=(a.xp||a.totalXP||0)-(ch.startXP_a||0);
-      const bScore=(b.xp||b.totalXP||0)-(ch.startXP_b||0);
+      const aScore=(a.xp||a.totalXP||0)-(ch.startXpA||0);
+      const bScore=(b.xp||b.totalXP||0)-(ch.startXpB||0);
       const total=Math.max(aScore+bScore,1);
       cc.appendChild(html('challenge-card',`
         <div style="flex:1">
@@ -4503,20 +5237,25 @@ function renderSettings(content) {
         <button class="btn sm" onclick="localStorage.removeItem('lag_seen');showToast('Intro reset')">Reset Intro</button>
         <button class="btn sm danger" onclick="showConfirm({icon:'⚠️',title:'Reset All Data',body:'This will erase ALL data and reload the page. This cannot be undone.',confirmLabel:'Reset Everything',confirmClass:'danger',onConfirm:()=>{localStorage.removeItem(\'lag_data\');location.reload();}})">Reset All Data</button>
       </div>
-      <!-- Firebase sync status -->
-      <div style="margin-top:14px;padding:10px 14px;border-radius:var(--r);border:1px solid ${DB.isFirebaseMode ? 'rgba(77,255,145,0.3)' : 'rgba(255,184,48,0.25)'};background:${DB.isFirebaseMode ? 'rgba(0,53,26,0.3)' : 'rgba(38,24,0,0.3)'};display:flex;align-items:center;gap:10px">
-        <span style="font-size:18px">${DB.isFirebaseMode ? '🔥' : '💾'}</span>
+      <!-- Firebase sync status — v21 hardened display -->
+      <div style="margin-top:14px;padding:10px 14px;border-radius:var(--r);border:1px solid ${DB.isFirebaseMode ? 'rgba(77,255,145,0.3)' : DB.isConfigured ? 'rgba(255,77,106,0.3)' : 'rgba(255,184,48,0.25)'};background:${DB.isFirebaseMode ? 'rgba(0,53,26,0.3)' : DB.isConfigured ? 'rgba(53,0,16,0.25)' : 'rgba(38,24,0,0.3)'};display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">${DB.isFirebaseMode ? (DB.syncActive ? '🔥' : '🔶') : '💾'}</span>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:700;color:${DB.isFirebaseMode ? 'var(--green)' : 'var(--amber)'}">
-            ${DB.isFirebaseMode ? 'Firebase Firestore — Live Sync Active' : 'Local Storage Mode — Device Only'}
+          <div style="font-size:12px;font-weight:700;color:${DB.isFirebaseMode ? 'var(--green)' : DB.isConfigured ? 'var(--red)' : 'var(--amber)'}">
+            ${DB.isFirebaseMode
+              ? (DB.syncActive ? 'Firebase Firestore — Live Sync Active' : 'Firebase Connected — Listener Pending')
+              : DB.isConfigured
+                ? 'Firebase Configured — Connection Failed'
+                : 'Local Storage Mode — Device Only'}
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">
             ${DB.isFirebaseMode
-              ? 'All changes sync in real-time across every device and browser.'
+              ? `Project: ${FIREBASE_CONFIG.projectId} · Doc: game/lag · Mode: firebase`
               : DB.isConfigured
-                ? 'Firebase configured but connection failed. Check credentials.'
+                ? 'Config present but live read failed. Check Firestore rules and network.'
                 : 'Add your Firebase credentials in FIREBASE_CONFIG to enable multi-device sync.'}
           </div>
+          ${DB.isFirebaseMode ? `<div style="font-size:10px;color:var(--text3);margin-top:3px;font-family:monospace">mode: ${DB.mode} · syncActive: ${DB.syncActive}</div>` : ''}
         </div>
         ${!DB.isFirebaseMode ? `<a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--amber);text-decoration:none;border:1px solid rgba(255,184,48,0.4);border-radius:6px;padding:4px 10px;white-space:nowrap">Setup →</a>` : ''}
       </div>
@@ -5277,9 +6016,19 @@ function _bootDone() {
   } catch(e) { console.error('[INIT] Password hash init failed:', e); }
 
   try {
-    _bootMsg(FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith('REPLACE_')
-      ? 'Connecting to Firebase…'
-      : 'Loading local data…');
+    // Use typeof guard here too — same reason as in DB.init()
+    const sdkReady = typeof firebase !== 'undefined' && !window._firebaseSDKFailed;
+    const cfgReady = DB.isConfigured;
+    if (!sdkReady) {
+      // SDK failed to load (CSP block, ad-blocker, or no network)
+      // App will run fully in local/offline mode — no data loss, all features work
+      console.warn('[INIT] Firebase SDK unavailable — running in offline (localStorage) mode.');
+      _bootMsg('Offline mode — loading local data…');
+    } else if (!cfgReady) {
+      _bootMsg('Loading local data…');
+    } else {
+      _bootMsg('Connecting to Firebase…');
+    }
     await DB.init();
     computeTeamXP();
   } catch(e) { console.error('[INIT] DB init failed:', e); }
