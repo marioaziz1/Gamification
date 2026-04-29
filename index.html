@@ -609,10 +609,14 @@ body.player-readonly-mode .sidebar .cat-item{
 .challenge-vs{font-size:11px;font-weight:800;color:var(--blue);letter-spacing:.1em;padding:4px 10px;background:rgba(77,166,255,0.1);border-radius:20px;border:1px solid rgba(77,166,255,0.3)}
 
 /* ══════════════════════════════════════════════════════
-   MOBILE-FIRST RESPONSIVE SYSTEM — v20 Mobile Refactor
+   MOBILE-FIRST RESPONSIVE SYSTEM — v21 Mobile Refactor
    All changes marked with [MOBILE] comment tag
    Desktop layout preserved via min-width breakpoints
 ══════════════════════════════════════════════════════ */
+
+/* ── [MOBILE] GLOBAL OVERFLOW GUARD ── */
+html{overflow-x:hidden}
+body{overflow-x:hidden;max-width:100vw}
 
 /* ── [MOBILE] ADAPTIVE GRID SYSTEM ──
    Replaces all minmax(200px, 1fr) with adaptive columns */
@@ -638,12 +642,15 @@ body.player-readonly-mode .sidebar .cat-item{
 
 /* ── [MOBILE] TOPBAR — scrollable nav, no overflow ── */
 .topbar{
-  padding:0 10px;
-  gap:8px;
+  padding:0 8px;
+  gap:6px;
   height:52px;
   position:sticky;top:0;z-index:100;
+  width:100%;max-width:100vw;
+  overflow:hidden;
 }
 .logo-text{display:none} /* [MOBILE] hide text logo on mobile, keep mark */
+.logo-mark{width:26px;height:26px;font-size:13px;flex-shrink:0}
 .nav{
   display:flex;
   gap:0;
@@ -652,33 +659,61 @@ body.player-readonly-mode .sidebar .cat-item{
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
   -ms-overflow-style:none;
-  max-width:calc(100vw - 160px);
+  max-width:calc(100vw - 120px);
   flex-shrink:1;
+  min-width:0;
 }
 .nav::-webkit-scrollbar{display:none}
 .nav-btn{
-  padding:8px 10px;   /* [MOBILE] min 44px touch height via line-height */
-  font-size:12px;
+  padding:8px 8px;   /* [MOBILE] min 44px touch height via line-height */
+  font-size:11px;
   white-space:nowrap;
   min-height:44px;    /* [MOBILE] 44px touch target */
   display:inline-flex;
   align-items:center;
+  flex-shrink:0;
 }
 /* [MOBILE] Role badge compact */
-.role-badge{padding:2px 7px;font-size:10px;margin-left:4px}
-.view-only-pill{padding:2px 7px;font-size:9px;margin-left:2px}
+.role-badge{padding:2px 6px;font-size:9px;margin-left:2px;flex-shrink:0}
+.view-only-pill{padding:2px 5px;font-size:9px;margin-left:1px;flex-shrink:0}
 
 /* ── [MOBILE] LAYOUT — sidebar hidden, content full width ── */
-.app{display:flex;flex-direction:column;min-height:100vh}
-.main{display:flex;flex:1;gap:0;min-height:0}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:100vw;overflow-x:hidden}
+.main{display:flex;flex:1;gap:0;min-height:0;max-width:100vw;overflow-x:hidden}
 .sidebar{display:none} /* [MOBILE] hidden on mobile — bottom nav replaces it */
 .content{
   flex:1;
   padding:10px;      /* [MOBILE] reduced mobile padding */
   overflow:auto;
+  overflow-x:hidden;
+  max-width:100vw;
   /* [MOBILE] bottom padding to avoid content hiding behind bottom nav */
   padding-bottom:72px;
 }
+
+/* ── [MOBILE] ENTRY & LOGIN — fit small screens ── */
+.entry-box{
+  width:calc(100% - 24px);
+  max-width:360px;
+  padding:24px 16px 20px;
+  margin:12px;
+  box-sizing:border-box;
+}
+.entry-logo{font-size:22px}
+.login-panel{
+  width:calc(100% - 24px);
+  max-width:360px;
+  padding:24px 16px;
+  margin:12px;
+  box-sizing:border-box;
+}
+
+/* ── [MOBILE] ENTRY SCREEN ── */
+#entry-screen{padding:12px;align-items:center}
+
+/* ── [MOBILE] SECTION HEADER WRAP ── */
+.section-header{flex-wrap:wrap;gap:6px}
+.section-title{font-size:14px}
 
 /* ── [MOBILE] BOTTOM NAVIGATION BAR ── */
 #mobile-bottom-nav{
@@ -794,31 +829,68 @@ body.double-xp-active #app::after{
 }
 
 /* ── [MOBILE] TOUCH TARGETS — Buttons, tasks ── */
-.btn{min-height:44px;padding:8px 14px} /* [MOBILE] increased */
-.btn.sm{min-height:36px;padding:6px 12px}
+.btn{min-height:44px;padding:8px 12px;max-width:100%;white-space:normal;word-break:break-word} /* [MOBILE] increased */
+.btn.sm{min-height:36px;padding:6px 10px}
 .icon-btn{width:36px;height:36px} /* [MOBILE] larger touch target */
-.task-row{padding:12px 12px;gap:12px}
+.task-row{padding:12px 10px;gap:8px;flex-wrap:wrap}
 .cat-item{min-height:44px;padding:10px 12px}
-.control-btn{padding:14px 10px;min-height:60px}
-.tab{min-height:44px;padding:8px 12px}
+.control-btn{padding:14px 8px;min-height:60px;word-break:break-word}
+.tab{min-height:44px;padding:8px 10px;font-size:12px}
 .mob-nav-btn:focus{outline:none}
+
+/* [MOBILE] Cards must not overflow */
+.card,.player-card,.team-card,.profile-card{
+  max-width:100%;
+  overflow-x:hidden;
+  box-sizing:border-box;
+}
+
+/* [MOBILE] Task name and XP should wrap on small screens */
+.task-name{min-width:0;word-break:break-word}
+.task-actions{flex-wrap:wrap;gap:4px}
+
+/* [MOBILE] Form rows must not overflow */
+.form-row input,.form-row select,.form-row textarea{
+  max-width:100%;
+  box-sizing:border-box;
+}
+.form-actions{flex-wrap:wrap;gap:6px}
+
+/* [MOBILE] Env row wraps properly */
+.env-row{flex-wrap:wrap;gap:6px}
+
+/* [MOBILE] Leader panel control buttons */
+.leader-panel,.owner-panel{
+  max-width:100%;
+  overflow-x:hidden;
+  box-sizing:border-box;
+}
+
+/* [MOBILE] lb-row items must not overflow */
+.lb-row{flex-wrap:wrap;gap:6px}
+.lb-bar-wrap{min-width:40px}
 
 /* ── [MOBILE] MODAL — full width on mobile ── */
 .modal{
+  width:calc(100vw - 24px);
   max-width:calc(100vw - 24px);
-  margin:12px;
-  padding:18px;
-  max-height:85vh;
+  margin:0;
+  padding:16px;
+  max-height:88vh;
+  overflow-y:auto;
+  overflow-x:hidden;
+  box-sizing:border-box;
 }
-.modal-backdrop{padding:12px;align-items:flex-end} /* [MOBILE] sheet from bottom */
-
-/* ── [MOBILE] ENTRY BOX ── */
-.entry-box{padding:28px 20px 22px;margin:12px}
-.login-panel{padding:24px 20px}
-
-/* ── [MOBILE] SECTION HEADER ── */
-.section-header{gap:6px}
-.section-title{font-size:14px}
+/* Inputs inside modals must not overflow */
+.modal input,.modal select,.modal textarea{
+  max-width:100%;
+  box-sizing:border-box;
+}
+.modal-backdrop{
+  padding:8px;
+  align-items:flex-end; /* [MOBILE] sheet from bottom */
+  box-sizing:border-box;
+}
 
 /* ── [MOBILE] PLAYER HERO IMMERSIVE ── */
 .player-hero-immersive{padding:18px 16px 14px}
@@ -864,14 +936,15 @@ body.double-xp-active #app::after{
 
   /* [DESKTOP] Restore topbar layout */
   .logo-text{display:flex}
-  .topbar{padding:0 20px;gap:16px;height:56px}
+  .topbar{padding:0 20px;gap:16px;height:56px;overflow:visible;max-width:none}
+  .logo-mark{width:28px;height:28px;font-size:14px}
   .nav{max-width:none;overflow-x:visible}
   .nav-btn{padding:6px 14px;font-size:13px;min-height:auto}
   .role-badge{padding:3px 10px;font-size:11px;margin-left:8px}
   .view-only-pill{padding:3px 10px;font-size:10px;margin-left:6px}
 
   /* [DESKTOP] Restore content padding */
-  .content{padding:20px;padding-bottom:20px}
+  .content{padding:20px;padding-bottom:20px;max-width:none;overflow-x:auto}
 
   /* [DESKTOP] Restore grid sizes */
   .grid2{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
@@ -883,17 +956,22 @@ body.double-xp-active #app::after{
   .env-links-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
 
   /* [DESKTOP] Restore button sizes */
-  .btn{min-height:auto;padding:7px 14px}
+  .btn{min-height:auto;padding:7px 14px;white-space:nowrap;word-break:normal}
   .btn.sm{min-height:auto;padding:4px 10px}
   .icon-btn{width:28px;height:28px}
-  .task-row{padding:10px 12px;gap:10px}
+  .task-row{padding:10px 12px;gap:10px;flex-wrap:nowrap}
   .cat-item{min-height:auto;padding:8px 10px}
-  .control-btn{padding:12px;min-height:auto}
-  .tab{min-height:auto;padding:7px 14px}
+  .control-btn{padding:12px;min-height:auto;word-break:normal}
+  .tab{min-height:auto;padding:7px 14px;font-size:13px}
 
   /* [DESKTOP] Restore modal */
-  .modal{max-width:460px;margin:0;padding:24px;max-height:90vh}
+  .modal{width:100%;max-width:460px;margin:0;padding:24px;max-height:90vh;overflow-x:auto}
   .modal-backdrop{padding:20px;align-items:center}
+
+  /* [DESKTOP] Restore entry */
+  .entry-box{width:100%;max-width:360px;padding:36px 32px 28px;margin:0}
+  .login-panel{width:100%;max-width:360px;padding:32px;margin:0}
+  #entry-screen{padding:20px}
 
   /* [DESKTOP] Restore player hero */
   .player-hero-immersive{padding:28px 28px 20px}
@@ -913,6 +991,14 @@ body.double-xp-active #app::after{
 
   /* [DESKTOP] Restore section header */
   .section-title{font-size:16px}
+  .section-header{flex-wrap:nowrap}
+
+  /* [DESKTOP] form actions */
+  .form-actions{flex-wrap:nowrap}
+  .env-row{flex-wrap:nowrap}
+
+  /* [DESKTOP] lb-row */
+  .lb-row{flex-wrap:nowrap}
 }
 
 
@@ -2672,7 +2758,13 @@ window.setCat = i => {
 };
 window.setTab = t => { state.tab=t; render(); };
 window.openModal = (type,data=null) => { state.modal={type,data}; render(); };
-window.closeModal = () => { state.modal=null; render(); };
+window.closeModal = () => {
+  // Clean up password-change modal globals if they exist
+  if (typeof window._spValidate === 'function') window._spValidate = null;
+  if (typeof window._spSubmitting !== 'undefined') window._spSubmitting = false;
+  state.modal = null;
+  render();
+};
 window.updateAssignOptions = () => {
   const scope = document.getElementById('m-type')?.value;
   const row = document.getElementById('assign-row');
@@ -5392,41 +5484,80 @@ function renderModal() {
     if (!auth.isOwner()) { closeModal(); return bd; }
     m.style.maxWidth = '440px';
     m.innerHTML = `
-      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span>🔑</span><span>Change System Password</span>
-        <span style="margin-left:auto;font-size:10px;color:var(--amber);background:rgba(255,184,48,0.1);border:1px solid rgba(255,184,48,0.3);border-radius:20px;padding:2px 10px;font-weight:700">OWNER ONLY</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--amber);background:rgba(255,184,48,0.1);border:1px solid rgba(255,184,48,0.3);border-radius:20px;padding:2px 8px;font-weight:700;white-space:nowrap">OWNER ONLY</span>
       </div>
       <button class="modal-close" onclick="closeModal()">×</button>
       <div style="background:rgba(255,184,48,0.05);border:1px solid rgba(255,184,48,0.2);border-radius:var(--r);padding:11px 14px;margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.6">
-        ⚠️ Changing the system password will <b style="color:var(--amber)">immediately end your current session</b> and require re-authentication with the new password.
+        ⚠️ Changing the password will <b style="color:var(--amber)">immediately end your session</b> and require re-authentication.
       </div>
       <div class="form-row">
         <label>Current Password</label>
         <div style="position:relative">
-          <input type="password" id="sp-current" class="login-input" style="width:100%;padding-right:40px" placeholder="Enter current password..." autocomplete="current-password">
+          <input type="password" id="sp-current" class="login-input" style="width:100%;padding-right:40px;box-sizing:border-box" placeholder="Enter current password..." autocomplete="current-password"
+            oninput="_spValidate()">
           <button type="button" tabindex="-1" onclick="const i=document.getElementById('sp-current');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px">👁</button>
         </div>
       </div>
       <div class="form-row">
-        <label>New Password <span style="color:var(--text3);font-size:11px;font-weight:400">— min 8 chars, must include letters &amp; numbers</span></label>
+        <label>New Password <span style="color:var(--text3);font-size:11px;font-weight:400">— min 8 chars, letters &amp; numbers</span></label>
         <div style="position:relative">
-          <input type="password" id="sp-new" class="login-input" style="width:100%;padding-right:40px" placeholder="Enter new password..." autocomplete="new-password">
+          <input type="password" id="sp-new" class="login-input" style="width:100%;padding-right:40px;box-sizing:border-box" placeholder="Enter new password..." autocomplete="new-password"
+            oninput="_spValidate()">
           <button type="button" tabindex="-1" onclick="const i=document.getElementById('sp-new');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px">👁</button>
         </div>
       </div>
       <div class="form-row">
         <label>Confirm New Password</label>
         <div style="position:relative">
-          <input type="password" id="sp-confirm" class="login-input" style="width:100%;padding-right:40px" placeholder="Repeat new password..." autocomplete="new-password"
-            onkeydown="if(event.key==='Enter')submitChangeSystemPassword()">
+          <input type="password" id="sp-confirm" class="login-input" style="width:100%;padding-right:40px;box-sizing:border-box" placeholder="Repeat new password..." autocomplete="new-password"
+            oninput="_spValidate()"
+            onkeydown="if(event.key==='Enter' && !document.getElementById('sp-submit').disabled) submitChangeSystemPassword()">
           <button type="button" tabindex="-1" onclick="const i=document.getElementById('sp-confirm');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px">👁</button>
         </div>
       </div>
-      <div id="sp-msg" style="min-height:20px;font-size:12px;margin-bottom:10px"></div>
-      <div class="form-actions">
-        <button class="btn" onclick="closeModal()">Cancel</button>
-        <button id="sp-submit" class="btn primary" style="border-color:rgba(255,184,48,0.5);color:var(--amber);background:rgba(255,184,48,0.1)" onclick="submitChangeSystemPassword()">Update Password</button>
+      <div id="sp-msg" style="min-height:20px;font-size:12px;margin-bottom:10px;color:var(--red)"></div>
+      <div class="form-actions" style="flex-wrap:wrap;gap:8px">
+        <button class="btn" onclick="closeModal()" type="button">Cancel</button>
+        <button id="sp-submit" class="btn primary" style="border-color:rgba(255,184,48,0.5);color:var(--amber);background:rgba(255,184,48,0.1);opacity:0.45;cursor:not-allowed" disabled onclick="submitChangeSystemPassword()" type="button">Update Password</button>
       </div>`;
+    // Inline real-time validation helper (scoped to this modal instance)
+    window._spValidate = function() {
+      const cur  = document.getElementById('sp-current')?.value || '';
+      const nw   = document.getElementById('sp-new')?.value    || '';
+      const conf = document.getElementById('sp-confirm')?.value|| '';
+      const msg  = document.getElementById('sp-msg');
+      const btn  = document.getElementById('sp-submit');
+      if (!msg || !btn) return;
+      // All fields must be filled
+      if (!cur || !nw || !conf) {
+        msg.textContent = cur || nw || conf ? 'Please fill in all fields.' : '';
+        btn.disabled = true; btn.style.opacity='0.45'; btn.style.cursor='not-allowed';
+        return;
+      }
+      // New password strength
+      if (nw.length < 8 || !/[a-zA-Z]/.test(nw) || !/[0-9]/.test(nw)) {
+        msg.textContent = 'New password must be at least 8 characters and include letters & numbers.';
+        btn.disabled = true; btn.style.opacity='0.45'; btn.style.cursor='not-allowed';
+        return;
+      }
+      // Confirm must match
+      if (nw !== conf) {
+        msg.textContent = 'New passwords do not match.';
+        btn.disabled = true; btn.style.opacity='0.45'; btn.style.cursor='not-allowed';
+        return;
+      }
+      // New must not be same as current (basic UX guard, not a security boundary)
+      if (nw === cur) {
+        msg.textContent = 'New password must be different from the current password.';
+        btn.disabled = true; btn.style.opacity='0.45'; btn.style.cursor='not-allowed';
+        return;
+      }
+      // All good — enable submit
+      msg.textContent = '';
+      btn.disabled = false; btn.style.opacity='1'; btn.style.cursor='pointer';
+    };
     setTimeout(() => document.getElementById('sp-current')?.focus(), 60);
   }
   else if(type==='addTeam') {
@@ -5929,9 +6060,12 @@ function renderModal() {
 // ========== CHANGE SYSTEM PASSWORD ==========
 // Called from the Change System Password modal.
 // All validation happens client-side first; final authority is auth.changePassword().
+let _spSubmitting = false; // guard against repeated submissions
 async function submitChangeSystemPassword() {
   // Guard: owner only
-  if (!auth.isOwner()) return;
+  if (!auth.isOwner()) { closeModal(); return; }
+  // Guard: no double-submit
+  if (_spSubmitting) return;
 
   const currentInput  = document.getElementById('sp-current');
   const newInput      = document.getElementById('sp-new');
@@ -5961,33 +6095,64 @@ async function submitChangeSystemPassword() {
     msgEl.textContent = 'Unable to update password. Please try again.';
     return;
   }
+  // Prevent submitting when button is still disabled (safety net)
+  if (submitBtn && submitBtn.disabled) {
+    msgEl.textContent = 'Please correct the errors above before submitting.';
+    return;
+  }
 
-  // Disable submit during async operation
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Updating…'; }
+  // Lock submit to prevent double-firing
+  _spSubmitting = true;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.45';
+    submitBtn.style.cursor = 'not-allowed';
+    submitBtn.textContent = 'Updating…';
+  }
 
   try {
     const result = await auth.changePassword(currentPw, newPw);
 
     if (result.ok) {
-      // Success: close modal, show success feedback, then force re-login
+      // ── SUCCESS PATH ──
+      // 1. Immediately close the modal so it NEVER stays open
       closeModal();
-      // Show success toast briefly before forcing logout
+      // 2. Clear the inline validator reference so there are no lingering DOM refs
+      window._spValidate = null;
+      // 3. Show success feedback
       showToast('✅ Password updated successfully');
+      // 4. After brief pause, invalidate session and return to entry screen
       setTimeout(() => {
-        // Invalidate session and return to entry screen
+        _spSubmitting = false;
         playerAuth.clear();
         document.body.classList.remove('player-readonly-mode');
         Entry.show('entry');
       }, 1800);
     } else {
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Update Password'; }
+      // ── FAILURE PATH — always re-enable form so user can retry ──
+      _spSubmitting = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+        submitBtn.textContent = 'Update Password';
+      }
       // Always use generic message — never leak specifics
       msgEl.textContent = result.msg || 'Unable to update password. Please try again.';
+      currentInput.value = '';    // force re-entry of current password
       currentInput.focus();
+      // Re-run validation to update button state after clearing current field
+      if (typeof window._spValidate === 'function') window._spValidate();
     }
   } catch (e) {
     console.error('[PW CHANGE] Error:', e);
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Update Password'; }
+    _spSubmitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+      submitBtn.textContent = 'Update Password';
+    }
     msgEl.textContent = 'Unable to update password. Please try again.';
   }
 }
